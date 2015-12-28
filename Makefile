@@ -14,6 +14,10 @@ clean:
 	rm $(KERNEL_BIN)
 	rm $(OBJS)
 
+.PHONY: run
+run: $(KERNEL_BIN)
+	qemu-system-i386 --kernel $(KERNEL_BIN)
+
 $(KERNEL_BIN): $(OBJS)
 	ld -m elf_i386 -T $(LINK_SCRIPT) -o $@ $(OBJS)
 
