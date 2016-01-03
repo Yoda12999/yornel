@@ -45,7 +45,7 @@
 #define F11 0
 #define F12 0
 
-unsigned char keyboard_map[128] = {
+unsigned uint8_t keyboard_map[128] = {
 	0, ESC, '1', '2', '3', '4', '5', '6', '7', '8',
 	'9', '0', '-', '=', '\b', '\t',	'q', 'w', 'e', 'r',
 	't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', LCTL,
@@ -64,7 +64,7 @@ unsigned char keyboard_map[128] = {
 	0, 0, 0, 0, 0, 0, 0, 0 /* 127 */
 };
 
-unsigned char shift_map[52] = {
+unsigned uint8_t shift_map[52] = {
 	/* 2 offset */
 	'!', '@', '#', '$', '%', '^', '&', '*',
 	'(', ')', '_', '+', '\b', '\t', 'Q', 'W', 'E', 'R',
@@ -74,7 +74,7 @@ unsigned char shift_map[52] = {
 	'M', '<', '>', '?'
 };
 
-unsigned char nlck_map[13] = {
+unsigned uint8_t nlck_map[13] = {
 	/* Keypad - 71 offset*/
 	'7', '8', '9', '-', '4', '5', '6', '+', '1',
 	'2', '3', '0', '.'
