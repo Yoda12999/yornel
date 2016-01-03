@@ -2,6 +2,12 @@
  *	kernel.c
  */
 
+#if !defined(__cplusplus)
+#include <stdbool.h>
+#endif
+#include <stddef.h>
+#include <stdint.h>
+ 
 #include "keyboard_map.h"
 
 #define LINES 25
@@ -47,63 +53,66 @@ enum {
 #define KEYBOARD_STATUS 0x64
 #define KEYBOARD_DATA 0x60
 
-extern unsigned char keyboard_map[128];
 extern void keyboard_handler(void);
-extern char read_port(unsigned short port);
-extern void write_port(unsigned short port, unsigned char data);
+extern uint8_t read_port(uint16_t port);
+extern void write_port(uint16_t port, uint8_t data);
 
-unsigned int cursor_loc = 0;
-unsigned char tab_size = 4;
+extern uint8_t keyboard_map[128];
+extern uint8_t shift_map[52];
+extern uint8_t nlck_map[13];
+
+uint32_t cursor_loc = 0;
+uint8_t tab_size = 4;
 
 struct Mod_keys {
-	unsigned char shift :2;		//set with either shift key
-	unsigned char r_shift :1;	//set with only the right shift key
-	unsigned char ctrl :2;
-	unsigned char r_ctrl :1;
-	unsigned char alt :2;
-	unsigned char r_alt :1;
-	unsigned char meta :2;
-	unsigned char r_meta :1;
-	unsigned char clck :1;
-	unsigned char nlck :1;
-	unsigned char plck :1;
+	uint8_t shift :2;		//set with either shift key
+	uint8_t r_shift :1;	//set with only the right shift key
+	uint8_t ctrl :2;
+	uint8_t r_ctrl :1;
+	uint8_t alt :2;
+	uint8_t r_alt :1;
+	uint8_t meta :2;
+	uint8_t r_meta :1;
+	uint8_t clck :1;
+	uint8_t nlck :1;
+	uint8_t slck :1;
 } mod_keys;
 
-char *vidptr = (char*) 0xb8000;	// video mem starts here
+uint8_t *vidptr = (uint8_t*) 0xb8000;	// video mem starts here. Maybe make 16 bit addressed instead...
 
 struct GDT_entry {
-	unsigned short limit_low; // low 8 bits of length of memory this descriptor describes
-	unsigned short base_low; // low 16 bits of base address
-	unsigned char base_mid; // middle 8 bits of base
+	uint16_t limit_low; // low 8 bits of length of memory this descriptor describes
+	uint16_t base_low; // low 16 bits of base address
+	uint8_t base_mid; // middle 8 bits of base
 	
-	unsigned char type :4; // flags for type of memory this describes
-	unsigned char one :1;
-	unsigned char dpl :2; // desciptor privilege level - ring level
-	unsigned char present :1; // 1 for valid entry
+	uint8_t type :4; // flags for type of memory this describes
+	uint8_t one :1;
+	uint8_t dpl :2; // desciptor privilege level - ring level
+	uint8_t present :1; // 1 for valid entry
 	
-	unsigned char limit_high :4; // top 4 bits of limit
-	unsigned char available :1;
-	unsigned char zero :1;
-	unsigned char op_size :1; // (0) 16 or (1) 32 bit
-	unsigned char gran :1; // if set limit is count of 4K blocks indead of bytes
+	uint8_t limit_high :4; // top 4 bits of limit
+	uint8_t available :1;
+	uint8_t zero :1;
+	uint8_t op_size :1; // (0) 16 or (1) 32 bit
+	uint8_t gran :1; // if set limit is count of 4K blocks indead of bytes
 	
-	unsigned char base_high;
+	uint8_t base_high;
 };
 
 #define GDT_ENTRY(gdt_type, gdt_base, gdt_limit, gdt_dpl) {	\
 	.limit_low	= (((gdt_limit) >> 12) & 0xFFFF),			\
 	.base_low	= ((gdt_base) & 0xFFFF),					\
 	.base_mid	= (((gdt_base) >> 16) & 0xFF),				\
-	.type = gdt_type,										\
-	.one = 1,												\
-	.dpl = gdt_dpl,											\
-	.present = 1,											\
-	.limit_high = ((gdt_limit) >> 28),						\
-	.available = 0,											\
-	.zero = 0,												\
-	.op_size = 1,											\
-	.gran = 1,												\
-	.base_high = (((gdt_base) >> 24) & 0xFF),				\
+	.type		= gdt_type,									\
+	.one		= 1,										\
+	.dpl		= gdt_dpl,									\
+	.present	= 1,										\
+	.limit_high	= ((gdt_limit) >> 28),						\
+	.available	= 0,										\
+	.zero		= 0,										\
+	.op_size	= 1,										\
+	.gran		= 1,										\
+	.base_high	= (((gdt_base) >> 24) & 0xFF),				\
 }
 
 struct GDT_entry GDT[GDT_SIZE] = {
@@ -113,8 +122,8 @@ struct GDT_entry GDT[GDT_SIZE] = {
 };
 
 struct GDT_ptr {
-	unsigned short limit;
-	unsigned long base;
+	uint16_t limit;
+	uint64_t base;
 } __attribute__((packed));
 
 extern void load_gdt(struct GDT_ptr *gdt_ptr);
@@ -123,34 +132,34 @@ void gdt_init(void) {
 	struct GDT_ptr gdt_ptr;
 	
 	gdt_ptr.limit = sizeof(GDT);
-	gdt_ptr.base = (unsigned long) GDT;
+	gdt_ptr.base = (uint64_t) GDT;
 	load_gdt(&gdt_ptr);
 }
 
 // IDT - Interupt Descriptor Table - matches interupt number to interupt handler address
 struct IDT_entry {
-	unsigned short int offset_low;
-	unsigned short int selector;
-	unsigned char zero;
-	unsigned char type_attr;
-	unsigned short int offset_high;
+	uint16_t offset_low;
+	uint16_t selector;
+	uint8_t zero;
+	uint8_t type_attr;
+	uint16_t offset_high;
 } __attribute__((packed)); // makes sure that gcc doesn't add padding for any reason
 
 struct IDT_entry IDT[IDT_SIZE];
 
 struct IDT_ptr {
-	unsigned short limit;
-	unsigned long base;
+	uint16_t limit;
+	uint64_t base;
 } __attribute__((packed));
 
 extern void load_idt(struct IDT_ptr *idt_ptr);
 
 void idt_init(void) {
-	unsigned long keyboard_address;
+	uint64_t keyboard_address;
 	struct IDT_ptr idt_ptr;
 	
 	// populate IDT entry for keyboard interrupt
-	keyboard_address = (unsigned long) keyboard_handler;
+	keyboard_address = (uint64_t) keyboard_handler;
 	IDT[0x21].offset_low = keyboard_address & 0xffff;
 	IDT[0x21].selector = 0x08; // KERNEL_CODE_SEGMENT_OFFSET
 	IDT[0x21].zero = 0;
@@ -179,7 +188,7 @@ void idt_init(void) {
 	
 	// fill IDT descriptor
 	idt_ptr.limit = sizeof(IDT);
-	idt_ptr.base = (unsigned long) IDT;
+	idt_ptr.base = (uint64_t) IDT;
 	load_idt(&idt_ptr);
 }
 
@@ -202,7 +211,7 @@ void kprint_char(char c) {
 }
 
 void kprint(const char *str) {
-	unsigned int i = 0;
+	size_t i = 0;
 
 	while(str[i] != '\0') {
 		kprint_char(str[i]);
@@ -210,7 +219,7 @@ void kprint(const char *str) {
 	}
 }
 
-void kprint_num(int num, unsigned int radix) {
+void kprint_num(int32_t num, uint32_t radix) {
 	if(num < 0) {
 		num = -num;
 		kprint_char('-');
@@ -228,16 +237,14 @@ void kprint_num(int num, unsigned int radix) {
 }
 
 void kb_init(void) {
-	unsigned char code;
-	
 	// 0xFD = 11111101 - IRQ1 only enabled, keyboard
 	write_port(0x21, 0xFD);
 }
 
 void keyboard_handler_main(void) {
-	unsigned char status;
-	unsigned char scancode;
-	unsigned char keycode;
+	uint8_t status;
+	uint8_t scancode;
+	uint8_t keycode;
 	
 	// write EOI to allow more interrupts
 	write_port(PIC1_CMD, 0x20);
@@ -276,16 +283,22 @@ void keyboard_handler_main(void) {
 			case LSFT_CODE:
 				mod_keys.shift += 1;
 				break;
+			case CLCK_CODE:
+				mod_keys.clck = !mod_keys.clck;
+			case NLCK_CODE:
+				mod_keys.nlck = !mod_keys.nlck;
+			case SLCK_CODE:
+				mod_keys.slck = !mod_keys.slck;
 			default:
 				keycode = keyboard_map[scancode];
 				
 				if(mod_keys.shift && scancode >= 2 && scancode < 54) {
 					keycode = shift_map[scancode - 2];
 					if(mod_keys.clck && keycode >= 'A' && keycode <= 'Z') {
-						keycode += 'a' + 'A';
+						keycode += 'a' - 'A';
 					}
-				} else if(mod_keys.clck && keycode >= 'A' && keycode <= 'Z') {
-					keycode += 'a' + 'A';
+				} else if(mod_keys.clck && keycode >= 'a' && keycode <= 'z') {
+					keycode -= 'a' - 'A';
 				}
 				
 				if(keycode == 0) {
@@ -306,7 +319,7 @@ void keyboard_handler_main(void) {
 }
 
 void clear_screen(void) {
-	unsigned int i = 0;
+	size_t i = 0;
 	
 	while(i < 80 * 25 * 2) {
 		vidptr[i] = ' ';
@@ -315,7 +328,10 @@ void clear_screen(void) {
 		i = i + 2;
 	}
 }
- 
+
+#if defined(__cplusplus)
+extern "C" /* Use C linkage for kernel_main. */
+#endif
 void kmain(void) {
 	const char *str = "Welcome to Yornel\n\n\r";
 	

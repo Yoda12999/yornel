@@ -1,11 +1,13 @@
 ;;kernel.asm
 bits 32
-section .text
+section .multiboot
+align 4
 	;multiboot
 	dd 0x1BADB002				;magic
-	dd 0x00						;flags
-	dd - (0x1BADB002 + 0x00)	;checksum
-
+	dd 0x03						;flags
+	dd - (0x1BADB002 + 0x03)	;checksum
+	
+section .text
 global start
 global read_port
 global write_port
@@ -62,7 +64,7 @@ start:
 	hlt						;halt cpu
 	jmp .loop
 
-section .bss
+section .bss, nobits
 resb 8192
 stack_space:
 

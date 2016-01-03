@@ -1,4 +1,4 @@
-CFLAGS += -ffreestanding
+CFLAGS += -ffreestanding -Wall -Wextra
 
 SRCS := head.asm kernel.c
 OBJS := $(foreach src,$(SRCS),$(basename $(src)).o)
