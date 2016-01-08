@@ -9,6 +9,7 @@
 #include <stdint.h>
  
 #include "keyboard_map.h"
+#include "io.h"
 
 #define LINES 25
 #define COLUMNS 80
@@ -54,12 +55,6 @@ enum {
 #define KEYBOARD_DATA 0x60
 
 extern void keyboard_handler(void);
-extern uint8_t read_port(uint16_t port);
-extern void write_port(uint16_t port, uint8_t data);
-
-extern uint8_t keyboard_map[128];
-extern uint8_t shift_map[52];
-extern uint8_t nlck_map[13];
 
 uint32_t cursor_loc = 0;
 uint8_t tab_size = 4;
@@ -167,24 +162,24 @@ void idt_init(void) {
 	IDT[0x21].offset_high = (keyboard_address & 0xffff0000) >> 16;
 	
 	// ICW1 - begin init - sets to wait for three more bytes on data ports
-	write_port(PIC1_CMD, 0x11);
-	write_port(PIC2_CMD, 0x11);
+	outb(PIC1_CMD, 0x11);
+	outb(PIC2_CMD, 0x11);
 	
 	// ICW2 - remap offset of IDT because first 32 interrupts are for CPU
-	write_port(PIC1_DAT, 0x20);
-	write_port(PIC2_DAT, 0x28);
+	outb(PIC1_DAT, 0x20);
+	outb(PIC2_DAT, 0x28);
 	
 	// ICW3 - set everything with no slaves
-	write_port(PIC1_DAT, 0x00);
-	write_port(PIC2_DAT, 0x00);
+	outb(PIC1_DAT, 0x00);
+	outb(PIC2_DAT, 0x00);
 	
 	// ICW4 - enviroment info - 80x86 mode
-	write_port(PIC1_DAT, 0x01);
-	write_port(PIC2_DAT, 0x01);
+	outb(PIC1_DAT, 0x01);
+	outb(PIC2_DAT, 0x01);
 	
 	// mask interupts
-	write_port(PIC1_DAT, 0xff);
-	write_port(PIC1_DAT, 0xff);
+	outb(PIC1_DAT, 0xff);
+	outb(PIC1_DAT, 0xff);
 	
 	// fill IDT descriptor
 	idt_ptr.limit = sizeof(IDT);
@@ -238,7 +233,7 @@ void kprint_num(int32_t num, uint32_t radix) {
 
 void kb_init(void) {
 	// 0xFD = 11111101 - IRQ1 only enabled, keyboard
-	write_port(0x21, 0xFD);
+	outb(0x21, 0xFD);
 }
 
 void keyboard_handler_main(void) {
@@ -247,12 +242,12 @@ void keyboard_handler_main(void) {
 	uint8_t keycode;
 	
 	// write EOI to allow more interrupts
-	write_port(PIC1_CMD, 0x20);
+	outb(PIC1_CMD, 0x20);
 	
-	status = read_port(KEYBOARD_STATUS);
+	status = inb(KEYBOARD_STATUS);
 	// lowest bit set if buffer empty
 	while(status & 0x01) {
-		scancode = read_port(KEYBOARD_DATA);
+		scancode = inb(KEYBOARD_DATA);
 		
 		if(scancode >= 0x80) {
 			// released key
@@ -270,9 +265,9 @@ void keyboard_handler_main(void) {
 			case 0xe0:
 			case 0xe1:
 				// escaped keycodes
-				status = read_port(KEYBOARD_STATUS);
+				status = inb(KEYBOARD_STATUS);
 				if(status & 0x01) {
-					scancode = read_port(KEYBOARD_DATA);
+					scancode = inb(KEYBOARD_DATA);
 					if(scancode >= 0x80) {
 						// released key
 					}
@@ -314,7 +309,7 @@ void keyboard_handler_main(void) {
 		kprint_char(' ');
 		*/
 		
-		status = read_port(KEYBOARD_STATUS);
+		status = inb(KEYBOARD_STATUS);
 	}
 }
 
