@@ -1,7 +1,3 @@
-/*
- *	kernel.c
- */
-
 #if !defined(__cplusplus)
 #include <stdbool.h>
 #endif
@@ -17,46 +13,8 @@
 #define COLUMNS 80
 #define SCREEN_SIZE (LINES * COLUMNS * 2)
 
-#define GDT_SIZE 3
-#define GDT_MEM_LOW 0
-#define GDT_MEM_LEN 0xFFFFFFFF
-
-#define GDT_EXE 0x08
-#define GDT_READ 0x02
-#define GDT_WRITE 0x02
-
-// kernel runs on ring 0
-#define DPL_KERNEL 0
-
-/* 
- * Define our GDT that we'll use - We know everything upfront, so we just
- * initalize it with the correct settings.
- *
- * This sets up the NULL, entry, and then the kernel's CS and DS segments,
- * which just span all 4GB of memory.
- */
-enum {
-	_GDT_NULL,
-	_KERNEL_CS,
-	_KERNEL_DS
-};
-
-#define GDT_NULL (_GDT_NULL << 3)
-#define KERNEL_CS (_KERNEL_CS << 3)
-#define KERNEL_DS (_KERNEL_DS << 3)
-
-#define IDT_SIZE 256
-#define KERNEL_CS_OFFSET KERNEL_CS
-
-#define PIC1_CMD 0x20
-#define PIC1_DAT 0x21
-#define PIC2_CMD 0xA0
-#define PIC2_DAT 0xA1
-
 #define KEYBOARD_STATUS 0x64
 #define KEYBOARD_DATA 0x60
-
-extern void keyboard_handler(void);
 
 uint32_t cursor_loc = 0;
 uint8_t tab_size = 4;
@@ -76,96 +34,6 @@ struct Mod_keys {
 } mod_keys;
 
 uint8_t *vidptr = (uint8_t*) 0xb8000;	// video mem starts here. Maybe make 16 bit addressed instead...
-
-struct GDT_entry {
-	uint16_t limit_low; // low 8 bits of length of memory this descriptor describes
-	uint16_t base_low; // low 16 bits of base address
-	uint8_t base_mid; // middle 8 bits of base
-	
-	uint8_t type :4; // flags for type of memory this describes
-	uint8_t one :1;
-	uint8_t dpl :2; // desciptor privilege level - ring level
-	uint8_t present :1; // 1 for valid entry
-	
-	uint8_t limit_high :4; // top 4 bits of limit
-	uint8_t available :1;
-	uint8_t zero :1;
-	uint8_t op_size :1; // (0) 16 or (1) 32 bit
-	uint8_t gran :1; // if set limit is count of 4K blocks indead of bytes
-	
-	uint8_t base_high;
-};
-
-#define GDT_ENTRY(gdt_type, gdt_base, gdt_limit, gdt_dpl) {	\
-	.limit_low	= (((gdt_limit) >> 12) & 0xFFFF),			\
-	.base_low	= ((gdt_base) & 0xFFFF),					\
-	.base_mid	= (((gdt_base) >> 16) & 0xFF),				\
-	.type		= gdt_type,									\
-	.one		= 1,										\
-	.dpl		= gdt_dpl,									\
-	.present	= 1,										\
-	.limit_high	= ((gdt_limit) >> 28),						\
-	.available	= 0,										\
-	.zero		= 0,										\
-	.op_size	= 1,										\
-	.gran		= 1,										\
-	.base_high	= (((gdt_base) >> 24) & 0xFF),				\
-}
-
-struct GDT_entry GDT[GDT_SIZE] = {
-	[_GDT_NULL] = {0}, // null entry required
-	[_KERNEL_CS] = GDT_ENTRY(GDT_EXE | GDT_READ, 0, 0xFFFFFFFF, DPL_KERNEL),
-	[_KERNEL_DS] = GDT_ENTRY(GDT_WRITE,	0, 0xFFFFFFFF, DPL_KERNEL)
-};
-
-void gdt_init(void) {
-	load_gdt(GDT, sizeof(GDT));
-}
-
-// IDT - Interupt Descriptor Table - matches interupt number to interupt handler address
-struct IDT_entry {
-	uint16_t offset_low;
-	uint16_t selector;
-	uint8_t zero;
-	uint8_t type_attr;
-	uint16_t offset_high;
-} __attribute__((packed)); // makes sure that gcc doesn't add padding for any reason
-
-struct IDT_entry IDT[IDT_SIZE];
-
-void idt_init(void) {
-	uint64_t keyboard_address;
-	
-	// populate IDT entry for keyboard interrupt
-	keyboard_address = (uint64_t) keyboard_handler;
-	IDT[0x21].offset_low = keyboard_address & 0xffff;
-	IDT[0x21].selector = 0x08; // KERNEL_CODE_SEGMENT_OFFSET
-	IDT[0x21].zero = 0;
-	IDT[0x21].type_attr = 0x8e; // INTERRUPT_GATE
-	IDT[0x21].offset_high = (keyboard_address & 0xffff0000) >> 16;
-	
-	// ICW1 - begin init - sets to wait for three more bytes on data ports
-	outb(PIC1_CMD, 0x11);
-	outb(PIC2_CMD, 0x11);
-	
-	// ICW2 - remap offset of IDT because first 32 interrupts are for CPU
-	outb(PIC1_DAT, 0x20);
-	outb(PIC2_DAT, 0x28);
-	
-	// ICW3 - set everything with no slaves
-	outb(PIC1_DAT, 0x00);
-	outb(PIC2_DAT, 0x00);
-	
-	// ICW4 - enviroment info - 80x86 mode
-	outb(PIC1_DAT, 0x01);
-	outb(PIC2_DAT, 0x01);
-	
-	// mask interupts
-	outb(PIC1_DAT, 0xff);
-	outb(PIC1_DAT, 0xff);
-	
-	load_idt(IDT, sizeof(IDT));
-}
 
 void kprint_char(char c) {
 	switch(c) {

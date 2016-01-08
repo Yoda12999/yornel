@@ -1,9 +1,3 @@
-/*
- * The following array is taken from 
- * http://www.osdever.net/bkerndev/Docs/keyboard.htm
- * All credits where due
- */
-
 #define ESC 0
 
 #define LSFT_CODE 0x2a
