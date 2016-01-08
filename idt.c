@@ -1,6 +1,6 @@
 #include "idt.h"
 
-void inline load_idt(void* base, uint16_t size) {
+void load_idt(void* base, uint16_t size) {
 	struct {
 		uint16_t limit;
 		uint64_t base;

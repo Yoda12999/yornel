@@ -1,9 +1,9 @@
-#ifndef _KERNEL_GDT_H
-#define _KERNEL_GDT_H
+#ifndef _GDT_H
+#define _GDT_H
 
 #include <stdint.h>
 
-void inline load_gdt(void* base, uint16_t size);
+void load_gdt(void* base, uint16_t size);
 
 #endif
 
