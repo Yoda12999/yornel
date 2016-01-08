@@ -10,6 +10,8 @@
  
 #include "keyboard_map.h"
 #include "io.h"
+#include "idt.h"
+#include "gdt.h"
 
 #define LINES 25
 #define COLUMNS 80
@@ -116,19 +118,8 @@ struct GDT_entry GDT[GDT_SIZE] = {
 	[_KERNEL_DS] = GDT_ENTRY(GDT_WRITE,	0, 0xFFFFFFFF, DPL_KERNEL)
 };
 
-struct GDT_ptr {
-	uint16_t limit;
-	uint64_t base;
-} __attribute__((packed));
-
-extern void load_gdt(struct GDT_ptr *gdt_ptr);
-
 void gdt_init(void) {
-	struct GDT_ptr gdt_ptr;
-	
-	gdt_ptr.limit = sizeof(GDT);
-	gdt_ptr.base = (uint64_t) GDT;
-	load_gdt(&gdt_ptr);
+	load_gdt(GDT, sizeof(GDT));
 }
 
 // IDT - Interupt Descriptor Table - matches interupt number to interupt handler address
@@ -141,8 +132,6 @@ struct IDT_entry {
 } __attribute__((packed)); // makes sure that gcc doesn't add padding for any reason
 
 struct IDT_entry IDT[IDT_SIZE];
-
-extern void load_idt(struct IDT_ptr *idt_ptr);
 
 void idt_init(void) {
 	uint64_t keyboard_address;

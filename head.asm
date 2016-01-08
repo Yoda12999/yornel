@@ -1,13 +1,7 @@
 section .text
-global load_gdt
 global keyboard_handler
 
 extern keyboard_handler_main
-
-load_gdt:
-	mov edx, [esp + 4]
-	lgdt [edx]
-	ret
 
 keyboard_handler:
 	push ds
