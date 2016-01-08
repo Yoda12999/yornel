@@ -1,19 +1,27 @@
-/*
- * link.ld
- */
-OUTPUT_FORMAT(elf32-i386)
-ENTRY(start)
+ENTRY(_start)
+
 SECTIONS {
-	. = 0x100000;
-	.text : {
+	. = 1M;
+
+	.text BLOCK(4K) : ALIGN(4K) {
 		*(.multiboot)
 		*(.text)
 	}
-	.rodata : { *(.rodata) }
-	.data : { *(.data) }
-	.bss : {
+
+	.rodata BLOCK(4K) : ALIGN(4K) {
+		*(.rodata)
+	}
+
+	/* Read-write data (initialized) */
+	.data BLOCK(4K) : ALIGN(4K) {
+		*(.data)
+	}
+
+	/* Read-write data (uninitialized) and stack */
+	.bss BLOCK(4K) : ALIGN(4K) {
 		*(COMMON)
 		*(.bss)
+		*(.bootstrap_stack)
 	}
 }
 
