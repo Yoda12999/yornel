@@ -332,6 +332,12 @@ void clear_screen(void) {
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
+void kearly(void) {
+}
+
+#if defined(__cplusplus)
+extern "C" /* Use C linkage for kernel_main. */
+#endif
 void kmain(void) {
 	const char *str = "Welcome to Yornel\n\n\r";
 	

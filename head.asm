@@ -1,14 +1,4 @@
-;;kernel.asm
-bits 32
-section .multiboot
-align 4
-	;multiboot
-	dd 0x1BADB002				;magic
-	dd 0x03						;flags
-	dd - (0x1BADB002 + 0x03)	;checksum
-	
 section .text
-global start
 global read_port
 global write_port
 global load_gdt
@@ -53,18 +43,4 @@ keyboard_handler:
 	pop es
 	pop ds
 	iretd						;used because returning from interrupt
-
-start:
-	cli						;block interupts - might be redundant
-	mov esp, stack_space	;set stack pointer
-	call kmain
-	
-	cli
-.loop:
-	hlt						;halt cpu
-	jmp .loop
-
-section .bss, nobits
-resb 8192
-stack_space:
 
