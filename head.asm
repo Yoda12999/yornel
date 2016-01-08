@@ -1,6 +1,5 @@
 section .text
 global load_gdt
-global load_idt
 global keyboard_handler
 
 extern keyboard_handler_main
@@ -8,12 +7,6 @@ extern keyboard_handler_main
 load_gdt:
 	mov edx, [esp + 4]
 	lgdt [edx]
-	ret
-	
-load_idt:
-	mov edx, [esp + 4]
-	lidt [edx]
-	sti					;turn on interrupts
 	ret
 
 keyboard_handler:

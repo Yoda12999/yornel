@@ -142,16 +142,10 @@ struct IDT_entry {
 
 struct IDT_entry IDT[IDT_SIZE];
 
-struct IDT_ptr {
-	uint16_t limit;
-	uint64_t base;
-} __attribute__((packed));
-
 extern void load_idt(struct IDT_ptr *idt_ptr);
 
 void idt_init(void) {
 	uint64_t keyboard_address;
-	struct IDT_ptr idt_ptr;
 	
 	// populate IDT entry for keyboard interrupt
 	keyboard_address = (uint64_t) keyboard_handler;
@@ -181,10 +175,7 @@ void idt_init(void) {
 	outb(PIC1_DAT, 0xff);
 	outb(PIC1_DAT, 0xff);
 	
-	// fill IDT descriptor
-	idt_ptr.limit = sizeof(IDT);
-	idt_ptr.base = (uint64_t) IDT;
-	load_idt(&idt_ptr);
+	load_idt(IDT, sizeof(IDT));
 }
 
 void kprint_char(char c) {
