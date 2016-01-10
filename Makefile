@@ -59,7 +59,7 @@ LIBS := $(LIBS) $(KERNEL_ARCH_LIBS)
 #$(CRTEND_OBJ) \
 #$(CRTN_OBJ) \
 
-SRCS := kernel.c boot.S gdt.c idt.c io.c keyboard_handler.S
+SRCS := kernel.c boot.S gdt.c idt.c io.c keyboard_handler.S interrupt.c df_handler.S
 OBJS := $(foreach src,$(SRCS),$(basename $(src)).o)
 
 LINK_SCRIPT := link.ld

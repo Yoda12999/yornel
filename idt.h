@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "gdt.h"
 
 #define IDT_SIZE 256
 
@@ -8,6 +9,8 @@
 #define PIC1_DAT 0x21
 #define PIC2_CMD 0xA0
 #define PIC2_DAT 0xA1
+
+#define CS_OFFSET KERNEL_CS
 
 // IDT - Interupt Descriptor Table - matches interupt number to interupt handler address
 struct IDT_entry {

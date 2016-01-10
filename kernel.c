@@ -1,13 +1,11 @@
-#if !defined(__cplusplus)
 #include <stdbool.h>
-#endif
 #include <stddef.h>
 #include <stdint.h>
  
 #include "keyboard_map.h"
 #include "io.h"
-#include "idt.h"
 #include "gdt.h"
+#include "interrupt.h"
 
 #define LINES 25
 #define COLUMNS 80
@@ -79,9 +77,13 @@ void kprint_num(int32_t num, uint32_t radix) {
 	}
 }
 
+extern void keyboard_handler(void);
+
 void kb_init(void) {
 	// 0xFD = 11111101 - IRQ1 only enabled, keyboard
 	outb(0x21, 0xFD);
+	
+	add_interrupt(0x21, keyboard_handler, 0x8e);
 }
 
 void keyboard_handler_main(void) {
@@ -90,7 +92,7 @@ void keyboard_handler_main(void) {
 	uint8_t keycode;
 	
 	// write EOI to allow more interrupts
-	outb(PIC1_CMD, 0x20);
+	EOI();
 	
 	status = inb(KEYBOARD_STATUS);
 	// lowest bit set if buffer empty
@@ -176,6 +178,9 @@ void clear_screen(void) {
 extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kearly(void) {
+	gdt_init();
+	int_init();
+	kb_init();
 }
 
 #if defined(__cplusplus)
@@ -189,10 +194,7 @@ void kmain(void) {
 	// splash screen
 	kprint(str);
 	
-	// init
-	gdt_init();
-	idt_init();
-	kb_init();
+	int_enable();
 	
 	while(1) {
 		asm volatile("hlt");
