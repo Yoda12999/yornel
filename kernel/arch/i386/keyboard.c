@@ -1,10 +1,10 @@
-#include "keyboard.h"
+#include <kernel/keyboard.h>
 
 #include <stdint.h>
-#include "interrupt.h"
-#include "io.h"
-#include "keyboard_map.h"
-#include "tty.h"
+#include <kernel/interrupt.h>
+#include <kernel/io.h>
+#include <kernel/keyboard_map.h>
+#include <kernel/tty.h>
 
 #define KEYBOARD_STATUS 0x64
 #define KEYBOARD_DATA 0x60

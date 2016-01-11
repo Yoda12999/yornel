@@ -1,4 +1,4 @@
-#include "tty.h"
+#include <kernel/tty.h>
 
 #include <stddef.h>
 

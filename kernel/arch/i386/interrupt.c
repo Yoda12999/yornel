@@ -1,9 +1,9 @@
-#include "interrupt.h"
+#include <kernel/interrupt.h>
 
 #include <stddef.h>
 #include "idt.h"
-#include "io.h"
-#include "exception.h"
+#include <kernel/io.h>
+#include "exceptions/exception.h"
 
 inline void int_enable(void) {
 	asm("sti");

@@ -1,7 +1,7 @@
 #include "idt.h"
 
 #include <stddef.h>
-#include "io.h"
+#include <kernel/io.h>
 
 static void load_idt(void* base, size_t size) {
 	struct {
