@@ -1,41 +1,25 @@
-HOST = i686-elf
-HOSTARCH := i386
+HOST ?= i686-elf
+HOSTARCH ?= i386
 
-AR = $(HOST)-ar
-AS = $(HOST)-as
-CC = $(HOST)-gcc
+AR ?= $(HOST)-ar
+AS ?= $(HOST)-as
+CC ?= $(HOST)-gcc
 
-# Configure the cross-compiler to use the desired system root.
-CC := $(CC) --sysroot=$(CURDIR)/sysroot
+ARCHDIR ?= arch/$(HOSTARCH)
 
-# Work around that the -elf gcc targets doesn't have a system include directory
-# because configure received --without-headers rather than --with-sysroot.
-CC := $(CC) -isystem=$(INCLUDEDIR)
+KERNEL_BIN ?= yornel.kernel
 
 CFLAGS ?= -O2 -g
 CPPFLAGS ?= 
 LDFLAGS ?= 
 LIBS ?= 
 
-DESTDIR ?=
-PREFIX ?= /usr/local
-EXEC_PREFIX ?=$(PREFIX)
-BOOTDIR ?= $(EXEC_PREFIX)/boot
-INCLUDEDIR ?= $(PREFIX)/include
-
-CFLAGS := $(CFLAGS) -ffreestanding -fbuiltin -Wall -Wextra
-CPPFLAGS := $(CPPFLAGS) -D__is_yornel_kernel -Iinclude
-LDFLAGS := $(LDFLAGS)
-LIBS := $(LIBS) -nostdlib -lgcc
-
-ARCHDIR := arch/$(HOSTARCH)
-
 include $(ARCHDIR)/make.config
 
-CFLAGS := $(CFLAGS) $(KERNEL_ARCH_CFLAGS)
-CPPFLAGS := $(CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS)
+CFLAGS := $(CFLAGS) -ffreestanding -fbuiltin -Wall -Wextra $(KERNEL_ARCH_CFLAGS)
+CPPFLAGS := $(CPPFLAGS) -D__is_yornel_kernel -Iinclude $(KERNEL_ARCH_CPPFLAGS)
 LDFLAGS := $(LDFLAGS) $(KERNEL_ARCH_LDFLAGS)
-LIBS := $(LIBS) $(KERNEL_ARCH_LIBS)
+LIBS := $(LIBS) -nostdlib -lgcc $(KERNEL_ARCH_LIBS)
 
 OBJS := \
 $(KERNEL_ARCH_OBJS) \
@@ -45,7 +29,6 @@ CRTI_OBJ := $(ARCHDIR)/crti.o
 CRTBEGIN_OBJ := $(shell $(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=crtbegin.o)
 CRTEND_OBJ := $(shell $(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=crtend.o)
 CRTN_OBJ := $(ARCHDIR)/crtn.o
-
 
 ALL_OUR_OBJS := \
 $(CRTI_OBJ) \
@@ -59,29 +42,14 @@ $(OBJS) \
 $(CRTEND_OBJ) \
 $(CRTN_OBJ) \
 
-LINK_SCRIPT := $(ARCHDIR)/link.ld
+LINK_SCRIPT = $(ARCHDIR)/link.ld
 
-KERNEL_BIN := yornel.kernel
-
-all: $(KERNEL_BIN)
-
-.PHONY: clean run install install-headers install-kernel
+.PHONY: all clean install-kernel
 
 clean:
-	rm -f $(KERNEL_BIN) $(OBJS) $(ALL_OUR_OBJS) *.o */*.o */*/*.o
+	rm -f $(KERNEL_BIN) $(ALL_OUR_OBJS) *.o */*.o */*/*.o
 
-run: $(KERNEL_BIN)
-	qemu-system-i386 --kernel $(KERNEL_BIN)
-
-install: install-headers install-kernel
-
-install-headers:
-	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -RTv include $(DESTDIR)$(INCLUDEDIR)
-
-install-kernel: $(KERNEL_BIN)
-	mkdir -p $(DESTDIR)$(BOOTDIR)
-	cp yornel.kernel $(DESTDIR)$(BOOTDIR)
+all: $(KERNEL_BIN)
 
 $(KERNEL_BIN): $(OBJ_LINK_LIST) $(LINK_SCRIPT)
 	$(CC) -T $(LINK_SCRIPT) -o $@ $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS)
@@ -92,3 +60,10 @@ $(KERNEL_BIN): $(OBJ_LINK_LIST) $(LINK_SCRIPT)
 %.o: %.c
 	$(CC) -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
+install-kernel: $(KERNEL_BIN)
+	mkdir -p $(BOOTDIR)
+	cp $(KERNEL_BIN) $(BOOTDIR)
+
+install-headers:
+	mkdir -p $(INCLUDEDIR)
+	cp -RTv include $(INCLUDEDIR)
