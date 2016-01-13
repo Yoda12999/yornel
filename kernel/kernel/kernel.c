@@ -100,7 +100,7 @@ void kmain(void) {
 	clear_screen();
 	
 	// splash screen
-	kprint(str);
+	kprint_string(str);
 	
 	int_enable();
 	

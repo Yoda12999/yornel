@@ -1,7 +1,5 @@
 #include <kernel/tty.h>
 
-#include <stddef.h>
-
 #define LINES 25
 #define COLUMNS 80
 #define SCREEN_SIZE (LINES * COLUMNS * 2)
@@ -30,12 +28,18 @@ void kprint_char(char c) {
 	}
 }
 
-void kprint(const char *str) {
+void kprint_string(const char *str) {
 	size_t i = 0;
 
 	while(str[i] != '\0') {
 		kprint_char(str[i]);
 		i++;
+	}
+}
+
+void kprint(const char *str, size_t size) {
+	for(size_t i = 0; i < size; i++) {
+		kprint_char(str[i]);	
 	}
 }
 
