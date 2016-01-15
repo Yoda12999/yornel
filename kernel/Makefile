@@ -19,7 +19,7 @@ include $(ARCHDIR)/make.config
 CFLAGS := $(CFLAGS) -ffreestanding -fbuiltin -Wall -Wextra $(KERNEL_ARCH_CFLAGS)
 CPPFLAGS := $(CPPFLAGS) -D__is_yornel_kernel -Iinclude $(KERNEL_ARCH_CPPFLAGS)
 LDFLAGS := $(LDFLAGS) $(KERNEL_ARCH_LDFLAGS)
-LIBS := $(LIBS) -nostdlib -lgcc $(KERNEL_ARCH_LIBS)
+LIBS := $(LIBS) -nostdlib -lgcc -lk $(KERNEL_ARCH_LIBS)
 
 OBJS := \
 $(KERNEL_ARCH_OBJS) \
@@ -61,9 +61,9 @@ $(KERNEL_BIN): $(OBJ_LINK_LIST) $(LINK_SCRIPT)
 	$(CC) -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
 install-kernel: $(KERNEL_BIN)
-	mkdir -p $(BOOTDIR)
-	cp $(KERNEL_BIN) $(BOOTDIR)
+	mkdir -p $(DESTDIR)$(BOOTDIR)
+	cp $(KERNEL_BIN) $(DESTDIR)$(BOOTDIR)
 
 install-headers:
-	mkdir -p $(INCLUDEDIR)
-	cp -RTv include $(INCLUDEDIR)
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
+	cp -RTv include $(DESTDIR)$(INCLUDEDIR)

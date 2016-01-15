@@ -71,9 +71,9 @@ clean:
 	rm -f $(BINARIES) $(OBJS)  *.o */*.o */*/*.o
 	
 install-libs: $(BINARIES)
-	mkdir -p $(LIBDIR)
-	cp $(BINARIES) $(LIBDIR)
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	cp $(BINARIES) $(DESTDIR)$(LIBDIR)
 
 install-headers:
-	mkdir -p $(INCLUDEDIR)
-	cp -RTv include $(INCLUDEDIR)
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
+	cp -RTv include $(DESTDIR)$(INCLUDEDIR)

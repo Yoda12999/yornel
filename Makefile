@@ -11,12 +11,12 @@ BINARIES = libc.a libg.a libk.a
 KERNEL_ISO = yornel.iso
 
 DESTDIR := $(CURDIR)/sysroot
-INCLUDEDIR := $(DESTDIR)$(PREFIX)/include
 
 PREFIX := /usr
 EXEC_PREFIX := $(PREFIX)
-BOOTDIR := $(DESTDIR)/boot
-LIBDIR := $(DESTDIR)$(EXEC_PREFIX)/lib
+BOOTDIR := /boot
+INCLUDEDIR := $(PREFIX)/include
+LIBDIR := $(EXEC_PREFIX)/lib
 
 KERNELDIR := $(CURDIR)/kernel
 LIBCDIR := $(CURDIR)/libc
@@ -31,21 +31,21 @@ run: | $(BOOTDIR)/$(KERNEL_BIN)
 	qemu-system-$(HOSTARCH) --kernel $(BOOTDIR)/$(KERNEL_BIN)
 	#qemu-system-$(HOSTARCH) --cdrom $(KERNEL_ISO)
 
-$(INCLUDEDIR):
-	mkdir -p $(INCLUDEDIR)
+$(DESTDIR)$(INCLUDEDIR):
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	make -C $(LIBCDIR) install-headers
 	make -C $(KERNELDIR) install-headers
 
-build-libc: $(INCLUDEDIR)
+build-libc: $(DESTDIR)$(INCLUDEDIR)
 	make -C $(LIBCDIR) $(BINARIES)
 
-build-kernel: $(INCLUDEDIR)
+build-kernel: $(DESTDIR)$(INCLUDEDIR)
 	make -C $(KERNELDIR) $(KERNEL_BIN)
 
-$(LIBDIR):
+$(DESTDIR)$(LIBDIR):
 	make -C $(LIBCDIR) install-libs
 
-$(BOOTDIR)/$(KERNEL_BIN): $(INCLUDEDIR) $(LIBDIR)
+$(BOOTDIR)/$(KERNEL_BIN): $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)
 	make -C $(KERNELDIR) install-kernel
 
 $(KERNEL_ISO): $(BOOTDIR)/$(KERNEL_BIN)
@@ -53,7 +53,7 @@ $(KERNEL_ISO): $(BOOTDIR)/$(KERNEL_BIN)
 		multiboot /boot/yornel.kernel \
 	})
 	mkdir -p isodir/boot/grub
-	cp $(BOOTDIR)/$(KERNEL_BIN) isodir/boot/$(KERNEL_BIN)
+	cp $(DESTDIR)$(BOOTDIR)/$(KERNEL_BIN) isodir/boot/$(KERNEL_BIN)
 	mv grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue /usr/lib/grub/i386-pc -o yornel.iso isodir
 
