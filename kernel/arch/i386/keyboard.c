@@ -4,7 +4,7 @@
 #include <kernel/interrupt.h>
 #include <kernel/io.h>
 #include <kernel/keyboard_map.h>
-#include <kernel/tty.h>
+#include <kernel/kprint.h>
 
 #define KEYBOARD_STATUS 0x64
 #define KEYBOARD_DATA 0x60

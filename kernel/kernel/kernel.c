@@ -1,6 +1,8 @@
 #include <kernel/interrupt.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
+#include <kernel/vga.h>
+#include <kernel/kprint.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -88,6 +90,7 @@ extern "C" /* Use C linkage for kernel_main. */
 void kearly(void) {
 	gdt_init();
 	int_init();
+	vga_init();
 	kb_init();
 }
 
@@ -96,11 +99,11 @@ extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kmain(void) {
 	const char *str = "Welcome to Yornel\n\n\r";
-	
-	clear_screen();
+
+	term_init(kterm, VGA_WIDTH, VGA_HEIGHT, VGA_MEMORY);
 	
 	// splash screen
-	kprint_string(str);
+	kprint(str);
 	
 	int_enable();
 	

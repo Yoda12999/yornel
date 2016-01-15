@@ -1,72 +1,62 @@
 #include <kernel/tty.h>
 
-#define LINES 25
-#define COLUMNS 80
-#define SCREEN_SIZE (LINES * COLUMNS * 2)
+#include <kernel/vga.h>
+#include <string.h>
 
-uint32_t cursor_loc = 0;
-uint8_t tab_size = 4;
+void term_init(struct terminal term, size_t width, size_t height, void* buffer) {
+	term.width = width;
+	term.height = height;
+	term.row = 0;
+	term.col = 0;
+	term.tab_size = 4;
+	term.color = make_color(COLOR_LIGHT_GREY, COLOR_BLACK);
+	term.buffer = buffer;
+}
 
-// video mem starts here. Maybe make 16 bit addressed instead...
-uint8_t *vidptr = (uint8_t*) 0xb8000;
+void term_putchar_at(struct terminal term, char c, uint8_t color, size_t x, size_t y) {
+	const size_t index = y*term.width + x;
+	term.buffer[index] = make_vgaentry(c, color);
+}
 
-void kprint_char(char c) {
+void term_putchar(struct terminal term, char c) {
 	switch(c) {
 		case '\n':
-			cursor_loc += COLUMNS;
-			return;
+			term.row++;
+			break;
 		case '\r':
-			cursor_loc -= cursor_loc%COLUMNS;
+			term.col = 0;
 			return;
 		case '\t':
-			cursor_loc += tab_size;
-			return;
+			term.col += term.tab_size - 1;
+			break;
 		default:
-			vidptr[cursor_loc*2] = c;
-			vidptr[cursor_loc*2 + 1] = 0x07;
-			cursor_loc++;
+			term_putchar_at(term, c, term.color, term.col, term.row);
+	}
+
+	if(++term.col == term.width) {
+		term.col = 0;
+		term.row++;
+	}
+	if(term.row == term.height) {
+		term.row = 0;
 	}
 }
 
-void kprint_string(const char *str) {
-	size_t i = 0;
-
-	while(str[i] != '\0') {
-		kprint_char(str[i]);
-		i++;
-	}
-}
-
-void kprint(const char *str, size_t size) {
+void term_write(struct terminal term, const char *str, size_t size) {
 	for(size_t i = 0; i < size; i++) {
-		kprint_char(str[i]);	
+		term_putchar(term, str[i]);	
 	}
 }
 
-void kprint_num(int32_t num, uint32_t radix) {
-	if(num < 0) {
-		num = -num;
-		kprint_char('-');
-	}
-	
-	if(num/radix) {
-		kprint_num(num/radix, radix);
-	}
-	
-	if(num%radix <= 9) {
-		kprint_char(num%radix + '0');
-	} else {
-		kprint_char(num%radix + 'a' - 10);
-	}
+void term_write_string(struct terminal term, const char *str) {
+	term_write(term, str, strlen(str));
 }
 
-void clear_screen(void) {
-	size_t i = 0;
-	
-	while(i < 80 * 25 * 2) {
-		vidptr[i] = ' ';
-		// attribute byte - light grey on black
-		vidptr[i + 1] = 0x07;
-		i = i + 2;
+void term_clear_screen(struct terminal term) {
+	for(size_t y = 0; y < term.height; y++) {
+		for(size_t x = 0; x < term.width; x++) {
+			const size_t index = y*term.width + x;
+			term.buffer[index] = make_vgaentry(' ', term.color);
+		}
 	}
 }
