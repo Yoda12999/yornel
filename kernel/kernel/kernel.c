@@ -100,7 +100,7 @@ extern "C" /* Use C linkage for kernel_main. */
 void kmain(void) {
 	const char *str = "Welcome to Yornel\n\n\r";
 
-	term_init(kterm, VGA_WIDTH, VGA_HEIGHT, VGA_MEMORY);
+	term_init(&kterm, VGA_WIDTH, VGA_HEIGHT, VGA_MEMORY);
 	
 	// splash screen
 	kprint(str);
