@@ -2,3 +2,7 @@
 *~
 *.o
 yornel.kernel
+sysroot
+isodir
+yornel.sublime*
+*.a
