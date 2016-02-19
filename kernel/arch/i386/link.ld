@@ -22,6 +22,8 @@ SECTIONS {
 		*(COMMON)
 		*(.bss)
 		*(.bootstrap_stack)
+		ebss = .;
+		endkernel = .;
 	}
 }
 

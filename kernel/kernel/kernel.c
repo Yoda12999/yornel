@@ -5,6 +5,8 @@
 #include <kernel/kprint.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <kernel/multiboot2.h>
+#include <kernel/page_frame.h>
 
 #define GDT_SIZE 3
 
@@ -97,16 +99,37 @@ void kearly(void) {
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
-void kmain(void) {
+void kmain(uint32_t magic, uintptr_t mbi) {
 	const char *str = "Welcome to Yornel\n\n\r";
 
+	if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+		//printf("Invalid magic number: 0x%x\n", (unsigned) magic);
+		return;
+	}
+
+	if(mbi & 7) {
+		//printf("Unaligned mbi: 0x%x\n", addr);
+		return;
+	}
+
+	uint32_t mb_size = *(uint32_t*) mbi;
+	for(struct multiboot_tag* tag = (struct multiboot_tag*) (mbi + 8);
+		tag->type != MULTIBOOT_TAG_TYPE_END;
+		tag = (struct multiboot_tag*) ((uintptr_t) tag + ((tag->size + 7) & ~7))) {
+		switch(tag->type) {
+			case MULTIBOOT_TAG_TYPE_MMAP:
+				mmap_init((struct multiboot_tag_mmap*) tag);
+				break;
+		}
+	}
+
 	term_init(&kterm, VGA_WIDTH, VGA_HEIGHT, VGA_MEMORY);
-	
+
 	// splash screen
 	kprint(str);
-	
+
 	int_enable();
-	
+
 	while(1) {
 		asm volatile("hlt");
 	}
