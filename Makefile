@@ -8,28 +8,30 @@ CC = $(HOST)-gcc
 
 KERNEL_BIN = yornel.kernel
 BINARIES = libc.a libg.a libk.a
-KERNEL_ISO = yornel.iso
+KERNEL_IMG = yornel.img
 
 DESTDIR := $(CURDIR)/sysroot
 
 PREFIX := /usr
 EXEC_PREFIX := $(PREFIX)
-BOOTDIR := /boot
+BOOTDIR := $(DESTDIR)/boot
 INCLUDEDIR := $(PREFIX)/include
 LIBDIR := $(EXEC_PREFIX)/lib
 
 KERNELDIR := $(CURDIR)/kernel
 LIBCDIR := $(CURDIR)/libc
 
-CC := $(CC) --sysroot=$(DESTDIR) -isystem=$(INCLUDEDIR)
+CC := $(CC) --sysroot=$(DESTDIR) -isystem=$(INCLUDEDIR) -g
 
 .PHONY: all clean run install-headers build-kernel build-libc
 
-all: $(DESTDIR)$(BOOTDIR)/$(KERNEL_BIN)
+all: $(BOOTDIR)/$(KERNEL_BIN)
 
-run: | $(DESTDIR)$(BOOTDIR)/$(KERNEL_BIN)
-	qemu-system-$(HOSTARCH) --kernel $(DESTDIR)$(BOOTDIR)/$(KERNEL_BIN)
-	#qemu-system-$(HOSTARCH) --cdrom $(KERNEL_ISO)
+debug: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
+	qemu-system-i386 -fda grub.img -hda fat:$(DESTDIR) -no-reboot -no-shutdown -boot order=a -s
+
+run: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
+	qemu-system-i386 -fda grub.img -hda fat:$(DESTDIR) -no-reboot -no-shutdown -boot order=a
 
 $(DESTDIR)$(INCLUDEDIR):
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
@@ -45,19 +47,32 @@ build-kernel: $(DESTDIR)$(INCLUDEDIR)
 $(DESTDIR)$(LIBDIR):
 	make -C $(LIBCDIR) install-libs
 
-$(DESTDIR)$(BOOTDIR)/$(KERNEL_BIN): $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)
+$(BOOTDIR)/$(KERNEL_BIN): $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)
 	make -C $(KERNELDIR) install-kernel
 
-$(KERNEL_ISO): $(BOOTDIR)/$(KERNEL_BIN)
-	$(file > grub.cfg,menuentry "yornel" { \
-		multiboot /boot/yornel.kernel \
-	})
-	mkdir -p isodir/boot/grub
-	cp $(DESTDIR)$(BOOTDIR)/$(KERNEL_BIN) isodir/boot/$(KERNEL_BIN)
-	mv grub.cfg isodir/boot/grub/grub.cfg
-	grub-mkrescue /usr/lib/grub/i386-pc -o yornel.iso isodir
+grub.img: grub.cfg
+	grub-mkimage -O i386-pc -c grub.cfg -o tmp.img biosdisk multiboot multiboot2 normal ls cat help elf chain configfile fat lsmmap mmap msdospart part_msdos vga vga_text
+	cat /usr/lib/grub/i386-pc/boot.img tmp.img > grub.img
+	rm tmp.img
+
+$(KERNEL_IMG): $(BOOTDIR)/$(KERNEL_BIN) grub.img
+	dd if=/dev/zero of=$(KERNEL_IMG) bs=512 count=131072
+	sudo parted $(KERNEL_IMG) -- mklabel msdos mkpart primary fat32 2048s -1s set 1 boot on
+	sudo losetup /dev/loop0 $(KERNEL_IMG)
+	sudo losetup /dev/loop1 $(KERNEL_IMG) -o 1048576
+	sudo mkfs.fat -F 32 /dev/loop1
+	mkdir mnt
+	sudo mount /dev/loop1 mnt
+	cp -R grub.cfg $(BOOTDIR)/grub
+	sudo cp -R $(DESTDIR)/* mnt
+	sudo grub-install --root-directory=mnt --no-floppy --modules="normal part_msdos multiboot configfile disk elf fat help lsmmap ls mmap multiboot2" --target=i386-pc /dev/loop0
+	sudo sync
+	sudo umount mnt
+	sudo losetup -d /dev/loop0
+	sudo losetup -d /dev/loop1
+	rmdir mnt
 
 clean:
-	rm -Rf $(DESTDIR) $(KERNEL_ISO) isodir
+	rm -Rf $(DESTDIR) $(KERNEL_IMG) isodir grub.img
 	make -C $(KERNELDIR) clean
 	make -C $(LIBCDIR) clean

@@ -52,7 +52,7 @@ clean:
 all: $(KERNEL_BIN)
 
 $(KERNEL_BIN): $(OBJ_LINK_LIST) $(LINK_SCRIPT)
-	$(CC) -T $(LINK_SCRIPT) -o $@ $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CC) -T $(LINK_SCRIPT) -o $@ $(CFLAGS) $(OBJ_LINK_LIST) $(LDFLAGS) $(LIBS)
 
 %.o: %.S
 	$(CC) -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
@@ -61,8 +61,8 @@ $(KERNEL_BIN): $(OBJ_LINK_LIST) $(LINK_SCRIPT)
 	$(CC) -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
 install-kernel: $(KERNEL_BIN)
-	mkdir -p $(DESTDIR)$(BOOTDIR)
-	cp $(KERNEL_BIN) $(DESTDIR)$(BOOTDIR)
+	mkdir -p $(BOOTDIR)
+	cp $(KERNEL_BIN) $(BOOTDIR)
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
