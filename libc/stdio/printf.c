@@ -169,7 +169,7 @@ static int print(char** out, const char* format, va_list args) {
 				amount++;
 			}
 			prints(out, format, amount, 0);
-			format += amount;
+			format += amount - 1;
 			pc += amount;
 		}
 	}
