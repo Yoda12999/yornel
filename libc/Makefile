@@ -38,7 +38,7 @@ OBJS := \
 $(FREEOBJS) \
 $(HOSTEDOBJS) \
 
-LIBK_OBJS := $(FREEOBJS: .o=.libk.o)
+LIBK_OBJS := $(FREEOBJS:.o=.libk.o)
 
 BINARIES ?= libc.a libg.a libk.a
 
@@ -48,18 +48,12 @@ all: $(BINARIES)
 
 libc.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp $@ $(DESTDIR)$(LIBDIR)
 
 libg.a:
 	$(AR) rcs $@
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp $@ $(DESTDIR)$(LIBDIR)
 
 libk.a: $(LIBK_OBJS)
 	$(AR) rcs $@ $(LIBK_OBJS)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp $@ $(DESTDIR)$(LIBDIR)
 
 %.o: %.c
 	$(CC) -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
@@ -75,7 +69,3 @@ libk.a: $(LIBK_OBJS)
 
 clean:
 	rm -f $(BINARIES) $(OBJS)  *.o */*.o */*/*.o
-
-install-headers:
-	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -RTv include $(DESTDIR)$(INCLUDEDIR)

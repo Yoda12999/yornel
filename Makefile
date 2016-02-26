@@ -33,18 +33,43 @@ debug: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
 run: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
 	qemu-system-i386 -fda grub.img -hda fat:$(DESTDIR) -no-reboot -no-shutdown -boot order=a
 
-install-headers:
-	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	make -C $(LIBCDIR) install-headers
-	make -C $(KERNELDIR) install-headers
+build-kernel: $(KERNELDIR)/$(KERNEL_BIN)
 
-build-libc: install-headers
+build-libc: $(addprefix $(LIBCDIR)/,$(BINARIES))
+
+install-headers: $(DESTDIR)$(INCLUDEDIR)
+
+$(DESTDIR)$(INCLUDEDIR): $(KERNELDIR)/include $(LIBCDIR)/include | $(DESTDIR)$(PREFIX)
+	mkdir $(DESTDIR)$(INCLUDEDIR)
+	cp -RTv $(KERNELDIR)/include $(DESTDIR)$(INCLUDEDIR)
+	cp -RTv $(LIBCDIR)/include $(DESTDIR)$(INCLUDEDIR)
+
+$(addprefix $(LIBCDIR)/,$(BINARIES)): $(DESTDIR)$(INCLUDEDIR) $(LIBCDIR)
 	make -C $(LIBCDIR) $(BINARIES)
 
-build-kernel: install-headers build-libc
+$(addprefix $(DESTDIR)$(LIBDIR)/,$(BINARIES)): $(addprefix $(LIBCDIR)/,$(BINARIES)) | $(DESTDIR)$(LIBDIR)
+	cp $(addprefix $(LIBCDIR)/,$(BINARIES)) $(DESTDIR)$(LIBDIR)
+
+$(KERNELDIR)/$(KERNEL_BIN): $(DESTDIR)$(INCLUDEDIR) $(addprefix $(DESTDIR)$(LIBDIR)/,$(BINARIES)) $(KERNELDIR)
 	make -C $(KERNELDIR) $(KERNEL_BIN)
 
-$(BOOTDIR)/$(KERNEL_BIN): build-kernel
+$(BOOTDIR)/$(KERNEL_BIN): $(KERNELDIR)/$(KERNEL_BIN) | $(BOOTDIR)
+	cp $(KERNELDIR)/$(KERNEL_BIN) $@
+
+$(DESTDIR)$(LIBDIR): | $(DESTDIR)$(EXEC_PREFIX)
+	mkdir $@
+
+$(BOOTDIR): | $(DESTDIR)
+	mkdir $@
+
+$(DESTDIR)$(PREFIX): | $(DESTDIR)
+	mkdir $@
+
+$(DESTDIR)$(EXEC_PREFIX): | $(DESTDIR)
+	mkdir $@
+
+$(DESTDIR):
+	mkdir $@
 
 grub.img: grub.cfg
 	grub-mkimage -O i386-pc -c grub.cfg -o tmp.img biosdisk multiboot multiboot2 normal ls cat help elf chain configfile fat lsmmap mmap msdospart part_msdos vga vga_text
