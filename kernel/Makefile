@@ -44,7 +44,7 @@ $(CRTN_OBJ) \
 
 LINK_SCRIPT = $(ARCHDIR)/link.ld
 
-.PHONY: all clean install-kernel
+.PHONY: all clean install-headers
 
 clean:
 	rm -f $(KERNEL_BIN) $(ALL_OUR_OBJS) *.o */*.o */*/*.o
@@ -53,16 +53,14 @@ all: $(KERNEL_BIN)
 
 $(KERNEL_BIN): $(OBJ_LINK_LIST) $(LINK_SCRIPT)
 	$(CC) -T $(LINK_SCRIPT) -o $@ $(CFLAGS) $(OBJ_LINK_LIST) $(LDFLAGS) $(LIBS)
+	mkdir -p $(BOOTDIR)
+	cp $@ $(BOOTDIR)
 
 %.o: %.S
 	$(CC) -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
 
 %.o: %.c
 	$(CC) -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
-
-install-kernel: $(KERNEL_BIN)
-	mkdir -p $(BOOTDIR)
-	cp $(KERNEL_BIN) $(BOOTDIR)
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)

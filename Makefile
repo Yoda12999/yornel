@@ -25,7 +25,7 @@ CC := $(CC) --sysroot=$(DESTDIR) -isystem=$(INCLUDEDIR) -g
 
 .PHONY: all clean run install-headers build-kernel build-libc
 
-all: $(BOOTDIR)/$(KERNEL_BIN)
+all: $(BOOTDIR)/$(KERNEL_BIN) grub.img
 
 debug: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
 	qemu-system-i386 -fda grub.img -hda fat:$(DESTDIR) -no-reboot -no-shutdown -boot order=a -s
@@ -33,33 +33,29 @@ debug: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
 run: | $(BOOTDIR)/$(KERNEL_BIN) grub.img
 	qemu-system-i386 -fda grub.img -hda fat:$(DESTDIR) -no-reboot -no-shutdown -boot order=a
 
-$(DESTDIR)$(INCLUDEDIR):
+install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	make -C $(LIBCDIR) install-headers
 	make -C $(KERNELDIR) install-headers
 
-build-libc: $(DESTDIR)$(INCLUDEDIR)
+build-libc: install-headers
 	make -C $(LIBCDIR) $(BINARIES)
 
-build-kernel: $(DESTDIR)$(INCLUDEDIR)
+build-kernel: install-headers build-libc
 	make -C $(KERNELDIR) $(KERNEL_BIN)
 
-$(DESTDIR)$(LIBDIR):
-	make -C $(LIBCDIR) install-libs
-
-$(BOOTDIR)/$(KERNEL_BIN): $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(LIBDIR)
-	make -C $(KERNELDIR) install-kernel
+$(BOOTDIR)/$(KERNEL_BIN): build-kernel
 
 grub.img: grub.cfg
 	grub-mkimage -O i386-pc -c grub.cfg -o tmp.img biosdisk multiboot multiboot2 normal ls cat help elf chain configfile fat lsmmap mmap msdospart part_msdos vga vga_text
-	cat /usr/lib/grub/i386-pc/boot.img tmp.img > grub.img
+	cat /usr/lib/grub/i386-pc/boot.img tmp.img > $@
 	rm tmp.img
 
 $(KERNEL_IMG): $(BOOTDIR)/$(KERNEL_BIN) grub.img
-	dd if=/dev/zero of=$(KERNEL_IMG) bs=512 count=131072
-	sudo parted $(KERNEL_IMG) -- mklabel msdos mkpart primary fat32 2048s -1s set 1 boot on
-	sudo losetup /dev/loop0 $(KERNEL_IMG)
-	sudo losetup /dev/loop1 $(KERNEL_IMG) -o 1048576
+	dd if=/dev/zero of=$@ bs=512 count=131072
+	sudo parted $@ -- mklabel msdos mkpart primary fat32 2048s -1s set 1 boot on
+	sudo losetup /dev/loop0 $@
+	sudo losetup /dev/loop1 $@ -o 1048576
 	sudo mkfs.fat -F 32 /dev/loop1
 	mkdir mnt
 	sudo mount /dev/loop1 mnt
