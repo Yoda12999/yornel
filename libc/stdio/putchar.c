@@ -1,13 +1,12 @@
 #include <stdio.h>
 
 #if defined(__is_yornel_kernel)
-#include <kernel/tty.h>
+#include <kernel/kprint.h>
 #endif
 
 int putchar(int ic) {
 #if defined(__is_yornel_kernel)
-	char c = (char) ic;
-	kprint(&c, sizeof(c));
+	kprint_char((char) ic);
 #else
 	// TODO: You need to implement a write system call.
 #endif
