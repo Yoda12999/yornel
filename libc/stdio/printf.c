@@ -156,6 +156,7 @@ static int print(char** out, const char* format, va_list args) {
 						pad |= PAD_ZERO;
 					}
 					pc += printi(out, (unsigned long) va_arg(args, void*), 16, 0, width, pad, 'a');
+					break;
 				case 'n':
 					//do nothing
 					break;
@@ -164,13 +165,21 @@ static int print(char** out, const char* format, va_list args) {
 			}
 		} else {
 		print_c:
-			amount = 1;
-			while(format[amount] && format[amount] != '%') {
+			/*amount = 1;
+			while(format[amount]) {
+				if(format[amount] == '%') {
+					amount++;
+					printchar(out, '*');
+					break;
+				}
 				amount++;
 			}
 			prints(out, format, amount, 0);
+			printchar(out, '|');
 			format += amount - 1;
-			pc += amount;
+			pc += amount;*/
+			printchar(out, *format);
+			pc++;
 		}
 	}
 	if(out) **out = '\0';
