@@ -11,6 +11,7 @@ BINARIES = libc.a libg.a libk.a
 KERNEL_IMG = yornel.img
 
 DESTDIR := $(CURDIR)/sysroot
+BUILDDIR := $(CURDIR)/build
 
 PREFIX := /usr
 EXEC_PREFIX := $(PREFIX)
@@ -45,10 +46,10 @@ $(DESTDIR)$(INCLUDEDIR): $(KERNELDIR)/include $(LIBCDIR)/include | $(DESTDIR)$(P
 	cp -RTv $(LIBCDIR)/include $(DESTDIR)$(INCLUDEDIR)
 
 $(addprefix $(LIBCDIR)/,$(BINARIES)): $(DESTDIR)$(INCLUDEDIR) $(LIBCDIR)
-	make -C $(LIBCDIR) $(BINARIES)
+	make -C $(LIBCDIR) $(notdir $@)
 
 $(addprefix $(DESTDIR)$(LIBDIR)/,$(BINARIES)): $(addprefix $(LIBCDIR)/,$(BINARIES)) | $(DESTDIR)$(LIBDIR)
-	cp $(addprefix $(LIBCDIR)/,$(BINARIES)) $(DESTDIR)$(LIBDIR)
+	cp -f $(addprefix $(LIBCDIR)/,$(BINARIES)) $(DESTDIR)$(LIBDIR)
 
 $(KERNELDIR)/$(KERNEL_BIN): $(DESTDIR)$(INCLUDEDIR) $(addprefix $(DESTDIR)$(LIBDIR)/,$(BINARIES)) $(KERNELDIR)
 	make -C $(KERNELDIR) $(KERNEL_BIN)
