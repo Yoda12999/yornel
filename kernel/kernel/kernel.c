@@ -2,9 +2,10 @@
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
 #include <kernel/vga.h>
-#include <kernel/kprint.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <kernel/kprint.h>
 #include <kernel/multiboot2.h>
 #include <kernel/page_frame.h>
 
@@ -99,19 +100,27 @@ void kearly(void) {
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
-void kmain(uint32_t magic, uintptr_t mbi) {
-	const char *str = "Welcome to Yornel\n\n\r";
+void kmain(uintptr_t mbi, uint32_t magic) {
+	const char *splash = "Welcome to Yornel\n\n\r";
 
-	if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
-		//printf("Invalid magic number: 0x%x\n", (unsigned) magic);
+	term_init(&kterm, VGA_WIDTH, VGA_HEIGHT, VGA_MEMORY);
+
+	// splash screen
+	printf("%s", splash);
+	printf("5: %d\n\r", 5);
+
+	if(magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+		printf("Invalid magic number: 0x%x\n\r", magic);
 		return;
 	}
 
 	if(mbi & 7) {
-		//printf("Unaligned mbi: 0x%x\n", addr);
+		printf("Unaligned mbi: 0x%p\n\r", (void*) mbi);
 		return;
 	}
 
+	printf("Looking for mmap_tag\n\r");
+/*
 	uint32_t mb_size = *(uint32_t*) mbi;
 	for(struct multiboot_tag* tag = (struct multiboot_tag*) (mbi + 8);
 		tag->type != MULTIBOOT_TAG_TYPE_END;
@@ -122,11 +131,8 @@ void kmain(uint32_t magic, uintptr_t mbi) {
 				break;
 		}
 	}
-
-	term_init(&kterm, VGA_WIDTH, VGA_HEIGHT, VGA_MEMORY);
-
-	// splash screen
-	kprint(str);
+*/
+	kprint("Initialized! (Probably)\n\r");
 
 	int_enable();
 
